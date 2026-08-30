@@ -24,6 +24,31 @@ test("bottom navigation hides during scroll activity and returns after scrolling
   await expect(navigation).toHaveAttribute("data-scroll-hidden", "false", { timeout: 2_000 });
 });
 
+test("visible bottom navigation does not cover content on any root tab", async ({ page }) => {
+  const navigation = page.locator('nav[aria-label="主要导航"]');
+  const tabs = ["找菜", "菜谱", "采购", "口味"];
+
+  for (const tab of tabs) {
+    if (tab !== "找菜") {
+      await navigation.getByRole("button", { name: tab, exact: true }).click();
+      await page.waitForTimeout(380);
+    }
+
+    const geometry = await page.evaluate(() => {
+      const currentScreen = document.querySelector<HTMLElement>('.flow-screen[data-flow-current="true"]')!;
+      const scroll = currentScreen.querySelector<HTMLElement>(".mobile-scroll")!;
+      const footer = document.querySelector<HTMLElement>(".flow-fixed-footer")!;
+
+      return {
+        scrollBottom: scroll.getBoundingClientRect().bottom,
+        footerTop: footer.getBoundingClientRect().top,
+      };
+    });
+
+    expect(geometry.scrollBottom, `${tab}页内容应在底栏上方结束`).toBeLessThanOrEqual(geometry.footerTop + 1);
+  }
+});
+
 test("iPhone navigation paints through the bottom safe area", async ({ page }) => {
   const layout = await page.evaluate(() => {
     const screen = document.querySelector<HTMLElement>('[data-testid="device-screen"]')!;

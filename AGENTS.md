@@ -11,6 +11,7 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 ## Product Feedback
 
 - Hide the primary bottom navigation while a root screen is actively scrolling, then reveal it shortly after scrolling stops.
+- While the primary bottom navigation is visible, every root screen's scroll viewport must end above it so list rows, controls, and quick-pick chips can never sit underneath the navigation.
 - On iPhone root tabs, extend the bottom navigation's visual background through the Home Indicator safe area so no empty strip appears below it.
 - Keep live device status chrome readable over dark hero imagery by switching it to a high-contrast light treatment without replacing the runtime-owned clock or indicators.
 
