@@ -1,0 +1,20 @@
+{
+  "name": "灶边 · 川渝湘赣菜谱攻略",
+  "short_name": "灶边",
+  "description": "按家中食材找菜、生成缺料采购单，并按个人口味改配川渝湘赣菜谱。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141310",
+  "theme_color": "#141310",
+  "icons": [
+    {
+      "src": "/assets/app/hero-wok.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
