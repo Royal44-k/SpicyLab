@@ -8,6 +8,12 @@ Before planning or implementing any mobile-app change, read this `AGENTS.md` in 
 
 Before making substantial visual changes, use the Product Design plugin's `get-context` skill when the visual source is unclear or no longer matches the current goal. When the user gives durable prototype-specific design feedback, preferences, or decisions, record them in `AGENTS.md`.
 
+## Product Feedback
+
+- Hide the primary bottom navigation while a root screen is actively scrolling, then reveal it shortly after scrolling stops.
+- On iPhone root tabs, extend the bottom navigation's visual background through the Home Indicator safe area so no empty strip appears below it.
+- Keep live device status chrome readable over dark hero imagery by switching it to a high-contrast light treatment without replacing the runtime-owned clock or indicators.
+
 When implementing from a selected generated mock, treat that image as the source of truth for layout, component anatomy, density, spacing, color, typography, visible content, and hierarchy.
 
 ## Editing Boundary

@@ -21,6 +21,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -153,14 +154,49 @@ function detailScreen(recipeId: string): FlowScreen {
 }
 
 function BottomNav({ flow, active }: { flow: FlowControls; active: string }) {
+  const navigationRef = useRef<HTMLElement | null>(null);
+  const revealTimerRef = useRef<number | null>(null);
+  const [scrollHidden, setScrollHidden] = useState(false);
   const tabs = [
     { id: "home", label: "找菜", icon: HomeIcon },
     { id: "recipes", label: "菜谱", icon: ReaderIcon },
     { id: "shopping", label: "采购", icon: SewingPinIcon },
     { id: "taste", label: "口味", icon: MixerVerticalIcon },
   ] as const;
+
+  useEffect(() => {
+    const navigation = navigationRef.current;
+    const scroll = navigation
+      ?.closest(".flow-stack")
+      ?.querySelector<HTMLElement>('.flow-screen[data-flow-current="true"] .mobile-scroll');
+
+    if (!scroll) return;
+
+    const markScrollActivity = () => {
+      setScrollHidden(true);
+      if (revealTimerRef.current !== null) window.clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = window.setTimeout(() => {
+        setScrollHidden(false);
+        revealTimerRef.current = null;
+      }, 220);
+    };
+
+    scroll.addEventListener("scroll", markScrollActivity, { passive: true });
+
+    return () => {
+      scroll.removeEventListener("scroll", markScrollActivity);
+      if (revealTimerRef.current !== null) window.clearTimeout(revealTimerRef.current);
+    };
+  }, [active]);
+
   return (
-    <nav className="bottom-nav" aria-label="主要导航">
+    <nav
+      ref={navigationRef}
+      className="bottom-nav"
+      aria-label="主要导航"
+      aria-hidden={scrollHidden ? "true" : undefined}
+      data-scroll-hidden={scrollHidden ? "true" : "false"}
+    >
       {tabs.map((tab) => {
         const Icon = tab.icon;
         return (
