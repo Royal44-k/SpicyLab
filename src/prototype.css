@@ -8,7 +8,7 @@
 .app-screen button:focus-visible,.app-screen input:focus-visible { outline:3px solid #f1be68; outline-offset:2px; }
 .paper-screen { background:var(--paper); }
 .dark-screen { color:#fffaf0; background:var(--charcoal); }
-.with-tab-footer { min-height:100%; padding-bottom:calc(var(--flow-footer-height) + var(--mobile-safe-area-height) + 26px); }
+.with-tab-footer.with-tab-footer { min-height:100%; padding-bottom:calc(70px + var(--mobile-safe-area-height) + 26px); }
 .eyebrow { margin:0 0 8px; font-size:11px; font-weight:800; letter-spacing:.14em; line-height:1.25; text-transform:uppercase; }
 .eyebrow.red { color:var(--chili); }
 

@@ -548,7 +548,6 @@ function RecipeDetail({ dish }: { dish: Recipe }) {
   const [completed, setCompleted] = useState<string[]>([]);
   const adapted = adaptRecipe(dish, preferences);
   const match = rankRecipes([dish], pantry)[0];
-  const isLaziji = dish.name === "辣子鸡";
 
   const addMissing = () => {
     addRecipeToShopping(dish);
@@ -558,8 +557,8 @@ function RecipeDetail({ dish }: { dish: Recipe }) {
   return (
     <MobileScroll className="app-screen paper-screen">
       <main className="detail-content">
-        <section className={isLaziji ? "detail-visual photo" : "detail-visual"}>
-          {isLaziji ? <img src="/assets/app/laziji.png" alt="黑铁锅里的辣子鸡" draggable={false} /> : null}
+        <section className="detail-visual photo">
+          <img src={dish.image} alt={`${dish.name}成菜图`} draggable={false} />
           <span className="detail-visual-copy">
             <small>{dish.cuisine} · {dish.difficulty}</small>
             <h1>{dish.name}</h1>

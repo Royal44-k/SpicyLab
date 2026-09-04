@@ -18,6 +18,7 @@ export type RecipeStep = {
 
 export type Recipe = {
   id: string;
+  image: string;
   name: string;
   cuisine: Cuisine;
   subtitle: string;
@@ -54,6 +55,7 @@ const recipe = (
   safety?: string,
 ): Recipe => ({
   id,
+  image: id === "sc-laziji" ? "/assets/app/laziji.png" : `/assets/app/dishes/${id}.png`,
   name,
   cuisine,
   subtitle,
