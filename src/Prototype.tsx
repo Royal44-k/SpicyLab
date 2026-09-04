@@ -30,6 +30,7 @@ import {
   KeyboardInput,
   MobileScroll,
   useFlow,
+  useKeyboard,
   type FlowControls,
   type FlowScreen,
 } from "./mobile";
@@ -39,6 +40,7 @@ import {
   defaultPreferences,
   normalizeIngredient,
   normalizeStoredState,
+  parseIngredientInput,
   rankRecipes,
   type FlavorProfile,
   type LocalState,
@@ -96,11 +98,19 @@ function AppStateProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({
     ...state,
     addPantry: (ingredient) => {
-      const cleaned = ingredient.trim();
-      if (!cleaned) return;
-      setState((current) => current.pantry.some(
-        (item) => normalizeIngredient(item) === normalizeIngredient(cleaned),
-      ) ? current : { ...current, pantry: [...current.pantry, cleaned] });
+      const additions = parseIngredientInput(ingredient);
+      if (!additions.length) return;
+      setState((current) => {
+        const known = new Set(current.pantry.map(normalizeIngredient));
+        const unique = additions.filter((item) => {
+          const canonical = normalizeIngredient(item);
+          if (known.has(canonical)) return false;
+          known.add(canonical);
+          return true;
+        });
+
+        return unique.length ? { ...current, pantry: [...current.pantry, ...unique] } : current;
+      });
     },
     removePantry: (ingredient) => setState((current) => ({
       ...current,
@@ -242,11 +252,14 @@ function DetailHeader({ flow, dish }: { flow: FlowControls; dish: Recipe }) {
 
 function IngredientComposer({ compact = false }: { compact?: boolean }) {
   const { pantry, addPantry, removePantry } = useApp();
+  const keyboard = useKeyboard();
   const [value, setValue] = useState("");
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (!value.trim()) return;
     addPantry(value);
+    keyboard.hide();
     setValue("");
   };
 
@@ -261,6 +274,13 @@ function IngredientComposer({ compact = false }: { compact?: boolean }) {
             value={value}
             onChange={(event) => setValue(event.target.value)}
             autoComplete="off"
+            inputMode="text"
+            enterKeyHint="done"
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }}
           />
           <button type="submit" className="add-ingredient" aria-label="添加食材" disabled={!value.trim()}>
             <PlusIcon width={20} height={20} />
@@ -290,7 +310,7 @@ function HomeScreen() {
   const ranked = rankRecipes(recipes, pantry);
   const cookable = ranked.filter((item) => item.canCook).length;
   const nearMatches = ranked.filter((item) => item.missing.length > 0 && item.missing.length <= 2).length;
-  const featured = ranked.find((item) => item.recipe.name === "辣子鸡") ?? ranked[0];
+  const featured = ranked[0];
 
   const revealMatches = () => {
     setRevealed(true);
@@ -352,7 +372,7 @@ function FeaturedRecipe({ result, onOpen }: { result: ReturnType<typeof rankReci
   const match = Math.round(result.matchRatio * 100);
   return (
     <button type="button" className="featured-recipe" onClick={onOpen} aria-label={`查看${result.recipe.name}菜谱`}>
-      <img src="/assets/app/laziji.png" alt="黑铁锅里的辣子鸡，点缀干辣椒与葱段" draggable={false} />
+      <img src={result.recipe.image} alt={`${result.recipe.name}成菜图`} draggable={false} />
       <span className="featured-shade" aria-hidden="true" />
       <span className="match-badge">{result.canCook ? "现有食材可做" : `匹配 ${match}%`}</span>
       <span className="featured-copy">
@@ -386,6 +406,7 @@ function RecipeRow({ result, onOpen }: { result: ReturnType<typeof rankRecipes>[
 function CatalogScreen() {
   const { pantry } = useApp();
   const flow = useFlow();
+  const keyboard = useKeyboard();
   const [query, setQuery] = useState("");
   const [cuisine, setCuisine] = useState<Cuisine | "全部">("全部");
   const ranked = rankRecipes(recipes, pantry, query).filter((item) => cuisine === "全部" || item.recipe.cuisine === cuisine);
@@ -405,6 +426,14 @@ function CatalogScreen() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="搜索菜名或食材"
             aria-label="搜索菜谱"
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              keyboard.hide();
+            }}
           />
           {query ? <button type="button" aria-label="清除搜索" onClick={() => setQuery("")}><Cross2Icon /></button> : null}
         </div>
@@ -472,10 +501,13 @@ function ShoppingGroup({ title, items, toggle }: { title: string; items: Shoppin
 
 function TasteScreen() {
   const { preferences, pantry, addPantry } = useApp();
+  const keyboard = useKeyboard();
   const [ingredient, setIngredient] = useState("");
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (!ingredient.trim()) return;
     addPantry(ingredient);
+    keyboard.hide();
     setIngredient("");
   };
   return (
@@ -497,7 +529,19 @@ function TasteScreen() {
           <div className="section-heading light"><div><p className="eyebrow red">我的食材</p><h2>常备清单</h2></div><span>{pantry.length} 种</span></div>
           <form className="light-search" onSubmit={submit}>
             <PlusIcon />
-            <KeyboardInput value={ingredient} onChange={(event) => setIngredient(event.target.value)} placeholder="补充一种常备食材" aria-label="补充常备食材" />
+            <KeyboardInput
+              value={ingredient}
+              onChange={(event) => setIngredient(event.target.value)}
+              placeholder="补充一种常备食材"
+              aria-label="补充常备食材"
+              inputMode="text"
+              enterKeyHint="done"
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                event.currentTarget.form?.requestSubmit();
+              }}
+            />
             <button type="submit" disabled={!ingredient.trim()}>添加</button>
           </form>
           <IngredientComposer compact />

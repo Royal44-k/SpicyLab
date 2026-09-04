@@ -5,6 +5,7 @@ import {
   adaptRecipe,
   buildShoppingList,
   normalizeStoredState,
+  parseIngredientInput,
   rankRecipes,
 } from "../src/domain.ts";
 import { recipes } from "../src/recipes.ts";
@@ -30,7 +31,24 @@ test("pantry matching understands aliases and ranks fully cookable dishes first"
   assert.equal(ranked[0]?.recipe.name, "辣子鸡");
   assert.equal(ranked[0]?.canCook, true);
   assert.equal(ranked[0]?.missing.length, 0);
-  assert.ok(ranked.every((result) => result.recipe.name.includes("鸡") || result.recipe.tags.some((tag) => tag.includes("鸡"))));
+  assert.ok(ranked.every((result) => [
+    result.recipe.name,
+    ...result.recipe.tags,
+    ...result.recipe.ingredients.map((ingredient) => ingredient.name),
+  ].some((value) => value.includes("鸡"))));
+});
+
+test("ingredient input splits Chinese separators and removes alias duplicates", () => {
+  assert.deepEqual(
+    parseIngredientInput(" 鸡腿，豆腐、干红辣椒；鸡腿肉 "),
+    ["鸡腿", "豆腐", "干红辣椒"],
+  );
+});
+
+test("recipe search includes ingredient names that are absent from titles and tags", () => {
+  const ranked = rankRecipes(recipes, [], "毛肚");
+
+  assert.deepEqual(ranked.map((result) => result.recipe.name), ["毛血旺"]);
 });
 
 test("shopping list only adds missing ingredients and merges repeated items", () => {

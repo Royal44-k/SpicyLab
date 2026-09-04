@@ -4,6 +4,45 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test("home ingredient input submits a batch with Enter and closes the keyboard", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+  const keyboard = page.getByTestId("keyboard-dock");
+
+  await input.click();
+  await input.fill("牛肉末，鸭血");
+  await expect(keyboard).toHaveAttribute("data-visible", "true");
+  await input.press("Enter");
+
+  await expect(input).toHaveValue("");
+  await expect(page.getByRole("button", { name: "移除牛肉末", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "移除鸭血", exact: true })).toBeVisible();
+  await expect(keyboard).toHaveAttribute("data-visible", "false");
+});
+
+test("new pantry items immediately promote the best matching recipe", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+
+  await input.fill("牛肉末");
+  await page.getByRole("button", { name: "添加食材" }).click();
+
+  await expect(page.locator(".featured-recipe strong")).toHaveText("麻婆豆腐");
+  await expect(page.locator(".featured-recipe .match-badge")).toHaveText("现有食材可做");
+  await expect(page.locator(".featured-recipe img")).toHaveAttribute("alt", "麻婆豆腐成菜图");
+});
+
+test("recipe search matches ingredient names and Enter closes the keyboard", async ({ page }) => {
+  await page.getByRole("navigation", { name: "主要导航" })
+    .getByRole("button", { name: "菜谱", exact: true })
+    .click();
+
+  const input = page.getByRole("searchbox", { name: "搜索菜谱" });
+  await input.fill("毛肚");
+  await input.press("Enter");
+
+  await expect(page.locator(".catalog-list .recipe-row strong")).toHaveText(["毛血旺"]);
+  await expect(page.getByTestId("keyboard-dock")).toHaveAttribute("data-visible", "false");
+});
+
 test("bottom navigation hides during scroll activity and returns after scrolling stops", async ({ page }) => {
   const navigation = page.locator('nav[aria-label="主要导航"]');
   const scroll = page.getByTestId("mobile-scroll");
@@ -55,7 +94,7 @@ test("recipe list keeps its bottom clearance after opening and closing a detail"
   await navigation.getByRole("button", { name: "菜谱", exact: true }).click();
   await page.waitForTimeout(380);
 
-  const scroll = page.getByTestId("mobile-scroll");
+  const scroll = page.locator('.flow-screen:has(.catalog-content) [data-testid="mobile-scroll"]');
   await scroll.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
   await expect(navigation).toHaveAttribute("data-scroll-hidden", "false", { timeout: 2_000 });
 
@@ -63,7 +102,7 @@ test("recipe list keeps its bottom clearance after opening and closing a detail"
   await page.getByRole("button", { name: "返回", exact: true }).click();
   await page.waitForTimeout(380);
 
-  const returnedScroll = page.getByTestId("mobile-scroll");
+  const returnedScroll = page.locator('.flow-screen:has(.catalog-content) [data-testid="mobile-scroll"]');
   await returnedScroll.evaluate((element) => element.scrollTo({ top: 0 }));
   await returnedScroll.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
   await expect(navigation).toHaveAttribute("data-scroll-hidden", "false", { timeout: 2_000 });

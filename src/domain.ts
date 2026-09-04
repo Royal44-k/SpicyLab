@@ -71,6 +71,20 @@ export const normalizeIngredient = (value: string) => {
   return aliases[compact] ?? compact;
 };
 
+export function parseIngredientInput(value: string): string[] {
+  const seen = new Set<string>();
+
+  return value
+    .split(/[、，,；;\n]+/u)
+    .map((item) => item.trim())
+    .filter((item) => {
+      const canonical = normalizeIngredient(item);
+      if (!canonical || seen.has(canonical)) return false;
+      seen.add(canonical);
+      return true;
+    });
+}
+
 const ingredientMatches = (available: Set<string>, ingredient: Ingredient) => {
   const canonical = normalizeIngredient(ingredient.name);
   if (available.has(canonical)) return true;
@@ -88,7 +102,13 @@ export function rankRecipes(catalog: Recipe[], pantry: string[], query = ""): Ra
   return catalog
     .filter((item) => {
       if (!normalizedQuery) return true;
-      const haystack = [item.name, item.cuisine, item.subtitle, ...item.tags].join(" ").toLocaleLowerCase("zh-CN");
+      const haystack = [
+        item.name,
+        item.cuisine,
+        item.subtitle,
+        ...item.tags,
+        ...item.ingredients.map((ingredient) => ingredient.name),
+      ].join(" ").toLocaleLowerCase("zh-CN");
       return haystack.includes(normalizedQuery);
     })
     .map((item) => {
