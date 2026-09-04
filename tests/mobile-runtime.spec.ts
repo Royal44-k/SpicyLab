@@ -91,7 +91,9 @@ test("BottomSheet remains mounted while its default exit animation plays", async
   await page.locator(".sheet-trigger").click();
   await expect(page.getByTestId("bottom-sheet")).toBeVisible();
 
-  await page.getByTestId("sheet-overlay").click({ position: { x: 8, y: 8 } });
+  const screen = await page.getByTestId("device-screen").boundingBox();
+  if (!screen) throw new Error("Device screen has no bounding box");
+  await page.mouse.click(screen.x + 12, screen.y + 90);
   await expect(page.getByTestId("bottom-sheet")).toHaveCount(1);
   await page.waitForTimeout(500);
   await expect(page.getByTestId("bottom-sheet")).toHaveCount(0);
@@ -124,6 +126,26 @@ test("keyboard and its attached footer dismiss on the same transition", async ({
 
   await page.waitForTimeout(300);
   expect(await footer.evaluate((element) => getComputedStyle(element).bottom)).toBe("34px");
+});
+
+test("outside tap dismisses the keyboard, preserves the draft, and permits refocus", async ({ page }) => {
+  await page.goto("/tests/runtime-fixture.html?fixture=keyboard");
+  const input = page.getByLabel("Message");
+  const keyboard = page.getByTestId("keyboard-dock");
+
+  await input.click();
+  await input.fill("豆腐");
+  await expect(keyboard).toHaveAttribute("data-visible", "true");
+
+  await page.getByText("Keyboard fixture", { exact: true }).click();
+  await expect(keyboard).toHaveAttribute("data-visible", "false");
+  await expect(keyboard).toHaveCSS("visibility", "hidden");
+  await expect(input).toHaveValue("豆腐");
+
+  await input.click();
+  await expect(keyboard).toHaveAttribute("data-visible", "true");
+  await expect(keyboard).toHaveCSS("visibility", "visible");
+  await expect(input).toBeFocused();
 });
 
 test("switching to Pixel keeps the composer above Android navigation", async ({ page }) => {

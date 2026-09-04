@@ -1,4 +1,11 @@
 import type { Ingredient, Recipe } from "./recipes.ts";
+import {
+  canonicalIngredient,
+  createPantryIndex,
+  matchIngredient,
+} from "./ingredientMatching.ts";
+
+export { hasIngredient } from "./ingredientMatching.ts";
 
 export type FlavorProfile = {
   servings: number;
@@ -31,33 +38,6 @@ export type RankedRecipe = {
   canCook: boolean;
 };
 
-const aliases: Record<string, string> = {
-  嫩豆腐: "豆腐",
-  老豆腐: "豆腐",
-  内酯豆腐: "豆腐",
-  干红辣椒: "干辣椒",
-  辣椒干: "干辣椒",
-  红干椒: "干辣椒",
-  鸡腿: "鸡腿肉",
-  去骨鸡腿: "鸡腿肉",
-  牛肉馅: "牛肉末",
-  猪肉馅: "猪肉末",
-  青花椒: "花椒",
-  红花椒: "花椒",
-  蒜头: "蒜",
-  大蒜: "蒜",
-  生姜: "姜",
-  小葱: "葱",
-  香葱: "葱",
-  香芹: "芹菜",
-  绿豆芽: "豆芽",
-  黄豆芽: "豆芽",
-  青辣椒: "青椒",
-  红辣椒: "红椒",
-  花生: "花生米",
-  鸡蛋液: "鸡蛋",
-};
-
 export const defaultPreferences: FlavorProfile = {
   servings: 2,
   spice: 2,
@@ -67,8 +47,7 @@ export const defaultPreferences: FlavorProfile = {
 };
 
 export const normalizeIngredient = (value: string) => {
-  const compact = value.trim().replaceAll(/\s+/g, "");
-  return aliases[compact] ?? compact;
+  return canonicalIngredient(value);
 };
 
 export function parseIngredientInput(value: string): string[] {
@@ -76,27 +55,16 @@ export function parseIngredientInput(value: string): string[] {
 
   return value
     .split(/[、，,；;\n]+/u)
-    .map((item) => item.trim())
+    .map(canonicalIngredient)
     .filter((item) => {
-      const canonical = normalizeIngredient(item);
-      if (!canonical || seen.has(canonical)) return false;
-      seen.add(canonical);
+      if (!item || seen.has(item)) return false;
+      seen.add(item);
       return true;
     });
 }
 
-const ingredientMatches = (available: Set<string>, ingredient: Ingredient) => {
-  const canonical = normalizeIngredient(ingredient.name);
-  if (available.has(canonical)) return true;
-
-  return [...available].some((item) => {
-    if (item.length < 2 || canonical.length < 2) return false;
-    return item.includes(canonical) || canonical.includes(item);
-  });
-};
-
 export function rankRecipes(catalog: Recipe[], pantry: string[], query = ""): RankedRecipe[] {
-  const available = new Set(pantry.map(normalizeIngredient).filter(Boolean));
+  const available = createPantryIndex(pantry);
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
 
   return catalog
@@ -111,23 +79,36 @@ export function rankRecipes(catalog: Recipe[], pantry: string[], query = ""): Ra
       ].join(" ").toLocaleLowerCase("zh-CN");
       return haystack.includes(normalizedQuery);
     })
-    .map((item) => {
+    .map((item, catalogIndex) => {
       // Pantry matching answers “can I start this dish?” from main ingredients and
       // vegetables. Aromatics and seasonings still appear in the detailed shopping list.
       const required = item.ingredients.filter((ingredient) =>
         ingredient.essential !== false && ingredient.category !== "香料" && ingredient.category !== "调味",
       );
-      const matched = required.filter((ingredient) => ingredientMatches(available, ingredient));
-      const missing = required.filter((ingredient) => !ingredientMatches(available, ingredient));
-      const matchRatio = required.length === 0 ? 1 : matched.length / required.length;
-      return { recipe: item, matched, missing, matchRatio, canCook: missing.length === 0 };
+      const matches = required.map((ingredient) => ({
+        ingredient,
+        result: matchIngredient(available, ingredient.name),
+        weight: ingredient.category === "主料" ? 3 : 1,
+      }));
+      const matched = matches.filter(({ result }) => result.matched).map(({ ingredient }) => ingredient);
+      const missing = matches.filter(({ result }) => !result.matched).map(({ ingredient }) => ingredient);
+      const totalWeight = matches.reduce((total, { weight }) => total + weight, 0);
+      const earnedWeight = matches.reduce((total, { result, weight }) => total + result.score * weight, 0);
+      const matchRatio = totalWeight === 0 ? 1 : earnedWeight / totalWeight;
+      return { recipe: item, matched, missing, matchRatio, canCook: missing.length === 0, catalogIndex };
     })
     .sort((a, b) => {
       if (a.canCook !== b.canCook) return Number(b.canCook) - Number(a.canCook);
-      if (a.missing.length !== b.missing.length) return a.missing.length - b.missing.length;
       if (a.matchRatio !== b.matchRatio) return b.matchRatio - a.matchRatio;
-      return a.recipe.time - b.recipe.time;
-    });
+      if (a.missing.length !== b.missing.length) return a.missing.length - b.missing.length;
+      if (a.recipe.time !== b.recipe.time) return a.recipe.time - b.recipe.time;
+      return a.catalogIndex - b.catalogIndex;
+    })
+    .map(({ catalogIndex: _catalogIndex, ...result }) => result);
+}
+
+export function findRelevantRecipes(catalog: Recipe[], pantry: string[]): RankedRecipe[] {
+  return rankRecipes(catalog, pantry).filter((result) => result.matched.length > 0);
 }
 
 export function buildShoppingList(
@@ -135,17 +116,20 @@ export function buildShoppingList(
   pantry: string[],
   existing: ShoppingItem[] = [],
 ): ShoppingItem[] {
-  const available = new Set(pantry.map(normalizeIngredient).filter(Boolean));
+  const available = createPantryIndex(pantry);
   const result = existing.map((item) => ({ ...item, recipeIds: [...item.recipeIds] }));
+  let changed = false;
 
   for (const ingredient of recipe.ingredients) {
-    if (ingredientMatches(available, ingredient)) continue;
+    if (matchIngredient(available, ingredient.name).matched) continue;
     const current = result.find(
       (item) => normalizeIngredient(item.name) === normalizeIngredient(ingredient.name) && item.unit === ingredient.unit,
     );
     if (current) {
+      if (current.recipeIds.includes(recipe.id)) continue;
       current.amount = roundAmount(current.amount + ingredient.amount);
-      if (!current.recipeIds.includes(recipe.id)) current.recipeIds.push(recipe.id);
+      current.recipeIds.push(recipe.id);
+      changed = true;
     } else {
       result.push({
         name: ingredient.name,
@@ -154,10 +138,11 @@ export function buildShoppingList(
         checked: false,
         recipeIds: [recipe.id],
       });
+      changed = true;
     }
   }
 
-  return result;
+  return changed ? result : existing;
 }
 
 const roundAmount = (amount: number) => Math.round(amount * 10) / 10;
@@ -235,7 +220,7 @@ export function normalizeStoredState(serialized: string | null | undefined): Loc
   if (!parsed || typeof parsed !== "object") return emptyState();
   const source = parsed as Record<string, unknown>;
   const pantry = Array.isArray(source.pantry)
-    ? [...new Set(source.pantry.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean))]
+    ? [...new Set(source.pantry.filter((item): item is string => typeof item === "string").map(canonicalIngredient).filter(Boolean))]
     : [];
   const shopping = Array.isArray(source.shopping)
     ? source.shopping.flatMap((raw): ShoppingItem[] => {

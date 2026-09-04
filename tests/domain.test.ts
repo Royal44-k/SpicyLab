@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   adaptRecipe,
   buildShoppingList,
+  findRelevantRecipes,
+  hasIngredient,
   normalizeStoredState,
   parseIngredientInput,
   rankRecipes,
@@ -41,8 +43,24 @@ test("pantry matching understands aliases and ranks fully cookable dishes first"
 test("ingredient input splits Chinese separators and removes alias duplicates", () => {
   assert.deepEqual(
     parseIngredientInput(" 鸡腿，豆腐、干红辣椒；鸡腿肉 "),
-    ["鸡腿", "豆腐", "干红辣椒"],
+    ["鸡腿肉", "豆腐", "干辣椒"],
   );
+});
+
+test("canonical matching rejects arbitrary fragments and accepts explicit aliases", () => {
+  assert.equal(hasIngredient(["肉", "毛血"], "五花肉"), false);
+  assert.equal(hasIngredient(["带皮五花肉"], "五花肉"), true);
+  assert.equal(hasIngredient(["干红辣椒"], "干辣椒"), true);
+  assert.equal(hasIngredient(["鱼片"], "黑鱼片"), true);
+});
+
+test("ingredient recommendations exclude zero matches and rank main-ingredient coverage first", () => {
+  assert.deepEqual(findRelevantRecipes(recipes, ["肉", "毛血"]), []);
+
+  const ranked = findRelevantRecipes(recipes, ["豆腐", "牛肉末"]);
+  assert.equal(ranked[0]?.recipe.name, "麻婆豆腐");
+  assert.equal(ranked[0]?.canCook, true);
+  assert.equal(ranked[0]?.matchRatio, 1);
 });
 
 test("recipe search includes ingredient names that are absent from titles and tags", () => {
@@ -65,6 +83,17 @@ test("shopping list only adds missing ingredients and merges repeated items", ()
   assert.equal(doubanjiang.amount, 30);
   assert.equal(doubanjiang.checked, true);
   assert.ok(doubanjiang.recipeIds.includes(recipe.id));
+});
+
+test("adding the same recipe twice does not duplicate shopping quantities", () => {
+  const recipe = recipes.find((item) => item.name === "麻婆豆腐");
+  assert.ok(recipe);
+
+  const once = buildShoppingList(recipe, ["豆腐", "牛肉末"]);
+  const twice = buildShoppingList(recipe, ["豆腐", "牛肉末"], once);
+
+  assert.equal(twice, once, "an idempotent add should preserve the existing list reference");
+  assert.deepEqual(twice, once);
 });
 
 test("flavor adaptation scales servings and makes concrete spice, salt and oil changes", () => {

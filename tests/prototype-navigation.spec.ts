@@ -22,12 +22,67 @@ test("home ingredient input submits a batch with Enter and closes the keyboard",
 test("new pantry items immediately promote the best matching recipe", async ({ page }) => {
   const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
 
-  await input.fill("牛肉末");
+  await input.fill("豆腐，牛肉末");
   await page.getByRole("button", { name: "添加食材" }).click();
 
   await expect(page.locator(".featured-recipe strong")).toHaveText("麻婆豆腐");
   await expect(page.locator(".featured-recipe .match-badge")).toHaveText("现有食材可做");
   await expect(page.locator(".featured-recipe img")).toHaveAttribute("alt", "麻婆豆腐成菜图");
+});
+
+test("outside tap dismisses the keyboard, preserves the ingredient draft, and permits refocus", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+  const keyboard = page.getByTestId("keyboard-dock");
+
+  await input.click();
+  await input.fill("豆腐");
+  await page.getByRole("heading", { name: "家里有什么？" }).click();
+
+  await expect(keyboard).toHaveAttribute("data-visible", "false");
+  await expect(input).toHaveValue("豆腐");
+
+  await input.click();
+  await expect(keyboard).toHaveAttribute("data-visible", "true");
+  await expect(input).toBeFocused();
+});
+
+test("the primary CTA commits its draft, closes the keyboard, and ranks the new pantry", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+
+  await input.click();
+  await input.fill("豆腐，牛肉末");
+  await page.getByRole("button", { name: "看看能做什么" }).click();
+
+  await expect(input).toHaveValue("");
+  const keyboard = page.getByTestId("keyboard-dock");
+  await expect(keyboard).toHaveAttribute("data-visible", "false");
+  await expect(keyboard).toHaveCSS("visibility", "hidden");
+  await expect(page.locator(".featured-recipe strong")).toHaveText("麻婆豆腐");
+  await expect(page.locator(".featured-recipe .match-badge")).toHaveText("现有食材可做");
+});
+
+test("zero-match pantry shows guidance instead of a fixed recipe", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+
+  await input.fill("毛血");
+  await page.getByRole("button", { name: "看看能做什么" }).click();
+
+  await expect(page.getByText("暂时没有精准匹配")).toBeVisible();
+  await expect(page.locator(".featured-recipe")).toHaveCount(0);
+});
+
+test("shopping add remains complete after leaving and reopening a recipe", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+  await input.fill("豆腐，牛肉末");
+  await input.press("Enter");
+
+  await page.getByRole("button", { name: "查看麻婆豆腐菜谱" }).click();
+  await page.getByRole("button", { name: "加入缺料" }).click();
+  await expect(page.getByRole("button", { name: "已加入采购单" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "返回", exact: true }).click();
+  await page.getByRole("button", { name: "查看麻婆豆腐菜谱" }).click();
+  await expect(page.getByRole("button", { name: "已加入采购单" })).toBeDisabled();
 });
 
 test("recipe search matches ingredient names and Enter closes the keyboard", async ({ page }) => {
@@ -43,7 +98,26 @@ test("recipe search matches ingredient names and Enter closes the keyboard", asy
   await expect(page.getByTestId("keyboard-dock")).toHaveAttribute("data-visible", "false");
 });
 
+test("taste pantry input accepts Enter, hides the keyboard, and updates the shared pantry", async ({ page }) => {
+  await page.getByRole("navigation", { name: "主要导航" })
+    .getByRole("button", { name: "口味", exact: true })
+    .click();
+
+  const input = page.getByRole("textbox", { name: "补充常备食材" });
+  await input.click();
+  await input.fill("木耳");
+  await input.press("Enter");
+
+  await expect(input).toHaveValue("");
+  await expect(page.getByRole("button", { name: "移除木耳", exact: true })).toBeVisible();
+  await expect(page.getByTestId("keyboard-dock")).toHaveAttribute("data-visible", "false");
+});
+
 test("bottom navigation hides during scroll activity and returns after scrolling stops", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+  await input.fill("豆腐，牛肉末，五花肉，青椒");
+  await input.press("Enter");
+
   const navigation = page.locator('nav[aria-label="主要导航"]');
   const scroll = page.getByTestId("mobile-scroll");
 
@@ -119,6 +193,52 @@ test("recipe list keeps its bottom clearance after opening and closing a detail"
   });
 
   expect(geometry.lastRecipeBottom, "从详情返回后，毛血旺应完整停在底栏上方").toBeLessThanOrEqual(geometry.footerTop + 1);
+});
+
+test("repeated input, tab, detail, and back operations remain responsive and idempotent", async ({ page }) => {
+  test.setTimeout(45_000);
+  const navigation = page.getByRole("navigation", { name: "主要导航" });
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+  const aliases = ["鸡腿", "鸡腿肉", "去骨鸡腿", "鸡腿", "鸡腿肉"];
+
+  for (const ingredient of aliases) {
+    await input.click();
+    await input.fill(ingredient);
+    await page.getByRole("heading", { name: "家里有什么？" }).click();
+    await expect(page.getByTestId("keyboard-dock")).toHaveAttribute("data-visible", "false");
+    await input.click();
+    await input.press("Enter");
+
+    await navigation.getByRole("button", { name: "菜谱", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "想学哪道菜？" })).toBeVisible();
+    await page.locator(".catalog-list .recipe-row").first().click();
+    await expect(page.getByRole("button", { name: "返回", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "返回", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "想学哪道菜？" })).toBeVisible();
+    await navigation.getByRole("button", { name: "找菜", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "家里有什么？" })).toBeVisible();
+  }
+
+  await expect(page.getByRole("button", { name: "移除鸡腿肉", exact: true })).toHaveCount(1);
+  await page.waitForTimeout(450);
+  await expect(page.locator('.flow-screen[data-flow-current="true"]')).toHaveCount(1);
+
+  await navigation.getByRole("button", { name: "菜谱", exact: true }).click();
+  await page.waitForTimeout(450);
+  const catalogScroll = page.locator('.flow-screen[data-flow-current="true"] [data-testid="mobile-scroll"]');
+  await catalogScroll.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+  await expect(navigation).toHaveAttribute("data-scroll-hidden", "false", { timeout: 2_000 });
+
+  const geometry = await page.evaluate(() => {
+    const current = document.querySelector<HTMLElement>('.flow-screen[data-flow-current="true"]')!;
+    const lastRecipe = current.querySelector<HTMLElement>(".catalog-list .recipe-row:last-child")!;
+    const footer = document.querySelector<HTMLElement>(".flow-fixed-footer")!;
+    return {
+      lastRecipeBottom: lastRecipe.getBoundingClientRect().bottom,
+      footerTop: footer.getBoundingClientRect().top,
+    };
+  });
+  expect(geometry.lastRecipeBottom).toBeLessThanOrEqual(geometry.footerTop + 1);
 });
 
 test("iPhone navigation paints through the bottom safe area", async ({ page }) => {

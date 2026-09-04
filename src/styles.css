@@ -718,7 +718,12 @@ p {
 }
 
 .keyboard-dock[data-visible="true"] {
+  visibility: visible;
   pointer-events: auto;
+}
+
+.keyboard-dock[data-visible="false"] {
+  visibility: hidden;
 }
 
 .keyboard-asset {

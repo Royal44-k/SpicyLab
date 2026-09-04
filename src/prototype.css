@@ -32,6 +32,7 @@
 .pantry-chip { display:inline-flex; min-height:34px; align-items:center; gap:3px; padding:5px 6px 5px 12px; color:#fff8ea; background:rgba(23,20,18,.72); border:1px solid rgba(218,196,153,.42); border-radius:999px; font-size:13px; font-weight:700; }
 .pantry-chip button { display:grid; width:28px; height:28px; place-items:center; color:#e0c899; background:transparent; border:0; border-radius:50%; cursor:pointer; }
 .home-hero .ingredient-search { color:#d6bd87; background:rgba(17,15,12,.82); border-color:#8d7242; box-shadow:0 12px 32px rgba(0,0,0,.24); }
+.home-hero .ingredient-search:focus-within { border-color:#f0cc85; box-shadow:0 0 0 3px rgba(240,204,133,.2),0 12px 32px rgba(0,0,0,.24); }
 .home-hero .ingredient-search input { color:#fff9ed; }
 .home-hero .ingredient-search input::placeholder { color:#9f9482; }
 .home-hero .add-ingredient { color:#ead4a6; background:#30291f; border:1px solid #6d5a39; }
@@ -99,6 +100,7 @@
 .split-title { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
 .text-button { min-height:44px; padding:0 5px; color:var(--chili); background:transparent; border:0; font-size:13px; font-weight:700; white-space:nowrap; cursor:pointer; }
 .light-search { padding:0 7px 0 14px; color:#8d8579; background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 8px 22px rgba(42,35,25,.06); }
+.light-search:focus-within { border-color:#b84a3b; box-shadow:0 0 0 3px rgba(203,48,36,.12),0 8px 22px rgba(42,35,25,.06); }
 .light-search>button:not(:has(svg)) { width:auto; padding:0 12px; font-size:12px; font-weight:800; }
 .filter-row { display:flex; gap:7px; margin-top:14px; }
 .filter-row button { min-width:0; min-height:42px; flex:1; padding:0 6px; color:#756d61; background:transparent; border:1px solid #d8d0c3; border-radius:10px; font-size:11px; font-weight:700; cursor:pointer; }

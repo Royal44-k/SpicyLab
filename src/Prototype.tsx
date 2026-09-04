@@ -18,9 +18,11 @@ import {
   type CSSProperties,
   type FormEvent,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -34,13 +36,12 @@ import {
   type FlowControls,
   type FlowScreen,
 } from "./mobile";
+import { appStateReducer, createInitialState } from "./appState";
 import {
   adaptRecipe,
-  buildShoppingList,
-  defaultPreferences,
+  findRelevantRecipes,
+  hasIngredient,
   normalizeIngredient,
-  normalizeStoredState,
-  parseIngredientInput,
   rankRecipes,
   type FlavorProfile,
   type LocalState,
@@ -70,22 +71,12 @@ function useApp() {
   return context;
 }
 
-function initialState(): LocalState {
-  if (typeof window === "undefined") {
-    return { pantry: [], shopping: [], preferences: { ...defaultPreferences }, favoriteIds: [] };
-  }
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored) return normalizeStoredState(stored);
-  return {
-    pantry: ["鸡腿肉", "干辣椒", "豆腐", "鸡蛋"],
-    shopping: [],
-    preferences: { ...defaultPreferences },
-    favoriteIds: [],
-  };
-}
-
 function AppStateProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<LocalState>(initialState);
+  const [state, dispatch] = useReducer(
+    appStateReducer,
+    typeof window === "undefined" ? null : window.localStorage.getItem(STORAGE_KEY),
+    createInitialState,
+  );
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -95,50 +86,27 @@ function AppStateProvider({ children }: { children: ReactNode }) {
     if (import.meta.env.PROD && "serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js");
   }, []);
 
+  const addPantry = useCallback((input: string) => dispatch({ type: "pantry/add", input }), []);
+  const removePantry = useCallback((ingredient: string) => dispatch({ type: "pantry/remove", ingredient }), []);
+  const addRecipeToShopping = useCallback((recipe: Recipe) => dispatch({ type: "shopping/add-recipe", recipe }), []);
+  const toggleShopping = useCallback((name: string) => dispatch({ type: "shopping/toggle", name }), []);
+  const clearPurchased = useCallback(() => dispatch({ type: "shopping/clear-purchased" }), []);
+  const updatePreference = useCallback(
+    (key: keyof FlavorProfile, preference: number) => dispatch({ type: "preference/update", key, value: preference }),
+    [],
+  );
+  const toggleFavorite = useCallback((recipeId: string) => dispatch({ type: "favorite/toggle", recipeId }), []);
+
   const value = useMemo<AppContextValue>(() => ({
     ...state,
-    addPantry: (ingredient) => {
-      const additions = parseIngredientInput(ingredient);
-      if (!additions.length) return;
-      setState((current) => {
-        const known = new Set(current.pantry.map(normalizeIngredient));
-        const unique = additions.filter((item) => {
-          const canonical = normalizeIngredient(item);
-          if (known.has(canonical)) return false;
-          known.add(canonical);
-          return true;
-        });
-
-        return unique.length ? { ...current, pantry: [...current.pantry, ...unique] } : current;
-      });
-    },
-    removePantry: (ingredient) => setState((current) => ({
-      ...current,
-      pantry: current.pantry.filter((item) => item !== ingredient),
-    })),
-    addRecipeToShopping: (dish) => setState((current) => ({
-      ...current,
-      shopping: buildShoppingList(dish, current.pantry, current.shopping),
-    })),
-    toggleShopping: (name) => setState((current) => ({
-      ...current,
-      shopping: current.shopping.map((item) => item.name === name ? { ...item, checked: !item.checked } : item),
-    })),
-    clearPurchased: () => setState((current) => ({
-      ...current,
-      shopping: current.shopping.filter((item) => !item.checked),
-    })),
-    updatePreference: (key, preference) => setState((current) => ({
-      ...current,
-      preferences: { ...current.preferences, [key]: preference },
-    })),
-    toggleFavorite: (recipeId) => setState((current) => ({
-      ...current,
-      favoriteIds: current.favoriteIds.includes(recipeId)
-        ? current.favoriteIds.filter((id) => id !== recipeId)
-        : [...current.favoriteIds, recipeId],
-    })),
-  }), [state]);
+    addPantry,
+    removePantry,
+    addRecipeToShopping,
+    toggleShopping,
+    clearPurchased,
+    updatePreference,
+    toggleFavorite,
+  }), [addPantry, addRecipeToShopping, clearPurchased, removePantry, state, toggleFavorite, toggleShopping, updatePreference]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
@@ -176,9 +144,10 @@ function BottomNav({ flow, active }: { flow: FlowControls; active: string }) {
 
   useEffect(() => {
     const navigation = navigationRef.current;
-    const scroll = navigation
+    const currentScreens = navigation
       ?.closest(".flow-stack")
-      ?.querySelector<HTMLElement>('.flow-screen[data-flow-current="true"] .mobile-scroll');
+      ?.querySelectorAll<HTMLElement>('.flow-screen[data-flow-current="true"] .mobile-scroll');
+    const scroll = currentScreens?.item(Math.max(0, currentScreens.length - 1));
 
     if (!scroll) return;
 
@@ -250,17 +219,20 @@ function DetailHeader({ flow, dish }: { flow: FlowControls; dish: Recipe }) {
   );
 }
 
-function IngredientComposer({ compact = false }: { compact?: boolean }) {
-  const { pantry, addPantry, removePantry } = useApp();
-  const keyboard = useKeyboard();
-  const [value, setValue] = useState("");
+type IngredientComposerProps = {
+  compact?: boolean;
+  draft?: string;
+  onDraftChange?: (value: string) => void;
+  onCommit?: () => void;
+};
+
+function IngredientComposer({ compact = false, draft = "", onDraftChange, onCommit }: IngredientComposerProps) {
+  const { pantry, removePantry } = useApp();
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!value.trim()) return;
-    addPantry(value);
-    keyboard.hide();
-    setValue("");
+    if (!draft.trim()) return;
+    onCommit?.();
   };
 
   return (
@@ -271,8 +243,8 @@ function IngredientComposer({ compact = false }: { compact?: boolean }) {
           <KeyboardInput
             aria-label="输入家里现有的食材"
             placeholder="输入食材，如：鸡腿、豆腐"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
+            value={draft}
+            onChange={(event) => onDraftChange?.(event.target.value)}
             autoComplete="off"
             inputMode="text"
             enterKeyHint="done"
@@ -282,7 +254,7 @@ function IngredientComposer({ compact = false }: { compact?: boolean }) {
               event.currentTarget.form?.requestSubmit();
             }}
           />
-          <button type="submit" className="add-ingredient" aria-label="添加食材" disabled={!value.trim()}>
+          <button type="submit" className="add-ingredient" aria-label="添加食材" disabled={!draft.trim()}>
             <PlusIcon width={20} height={20} />
           </button>
         </form>
@@ -304,17 +276,32 @@ function IngredientComposer({ compact = false }: { compact?: boolean }) {
 }
 
 function HomeScreen() {
-  const { pantry } = useApp();
+  const { pantry, addPantry } = useApp();
   const flow = useFlow();
-  const [revealed, setRevealed] = useState(true);
-  const ranked = rankRecipes(recipes, pantry);
+  const { hide: hideKeyboard } = useKeyboard();
+  const matchSectionRef = useRef<HTMLElement | null>(null);
+  const [draft, setDraft] = useState("");
+  const [revealed, setRevealed] = useState(pantry.length > 0);
+  const ranked = findRelevantRecipes(recipes, pantry);
   const cookable = ranked.filter((item) => item.canCook).length;
   const nearMatches = ranked.filter((item) => item.missing.length > 0 && item.missing.length <= 2).length;
   const featured = ranked[0];
 
-  const revealMatches = () => {
+  const commitDraft = useCallback(() => {
+    const input = draft.trim();
+    if (input) {
+      addPantry(input);
+      setDraft("");
+    }
+    hideKeyboard();
     setRevealed(true);
-    window.setTimeout(() => document.querySelector("[data-match-section]")?.scrollIntoView({ behavior: "smooth" }), 40);
+  }, [addPantry, draft, hideKeyboard]);
+
+  const revealMatches = () => {
+    commitDraft();
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => matchSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    });
   };
 
   return (
@@ -327,7 +314,11 @@ function HomeScreen() {
             <h1 id="home-title">家里有什么？</h1>
             <p>告诉我现成食材，先找能做的；缺一两样，也给你列好采购单。</p>
           </div>
-          <IngredientComposer />
+          <IngredientComposer
+            draft={draft}
+            onDraftChange={setDraft}
+            onCommit={commitDraft}
+          />
           <button type="button" className="primary-cta" onClick={revealMatches}>
             <StarIcon width={18} height={18} />
             看看能做什么
@@ -335,21 +326,29 @@ function HomeScreen() {
           </button>
         </section>
 
-        {revealed && featured ? (
-          <section className="match-section" data-match-section aria-label="匹配结果">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow red">按现有食材匹配</p>
-                <h2>{cookable > 0 ? `能做 ${cookable} 道菜` : "先从最接近的做起"}</h2>
-              </div>
-              <span>{nearMatches} 道只差 1–2 样</span>
-            </div>
-            <FeaturedRecipe result={featured} onOpen={() => flow.push(detailScreen(featured.recipe.id))} />
-            <div className="compact-results">
-              {ranked.filter((result) => result.recipe.id !== featured.recipe.id).slice(0, 3).map((result) => (
-                <RecipeRow key={result.recipe.id} result={result} onOpen={() => flow.push(detailScreen(result.recipe.id))} />
-              ))}
-            </div>
+        {revealed ? (
+          <section ref={matchSectionRef} className="match-section" data-match-section aria-label="匹配结果" aria-live="polite">
+            {featured ? (
+              <>
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow red">按现有食材匹配</p>
+                    <h2>{cookable > 0 ? `能做 ${cookable} 道菜` : "先从最接近的做起"}</h2>
+                  </div>
+                  <span>{nearMatches} 道只差 1–2 样</span>
+                </div>
+                <FeaturedRecipe result={featured} onOpen={() => flow.push(detailScreen(featured.recipe.id))} />
+                <div className="compact-results">
+                  {ranked.filter((result) => result.recipe.id !== featured.recipe.id).slice(0, 3).map((result) => (
+                    <RecipeRow key={result.recipe.id} result={result} onOpen={() => flow.push(detailScreen(result.recipe.id))} />
+                  ))}
+                </div>
+              </>
+            ) : pantry.length === 0 ? (
+              <EmptyState title="先添加家里的食材" note="输入一种或多种现有食材，再查看真正匹配的菜谱。" />
+            ) : (
+              <EmptyState title="暂时没有精准匹配" note="试试更具体的名称，例如“五花肉”“鱼片”或“青椒”。" />
+            )}
           </section>
         ) : null}
       </main>
@@ -587,15 +586,22 @@ function FlavorControl({ label, preferenceKey, value }: { label: string; prefere
 }
 
 function RecipeDetail({ dish }: { dish: Recipe }) {
-  const { pantry, preferences, addRecipeToShopping } = useApp();
-  const [added, setAdded] = useState(false);
+  const { pantry, preferences, shopping, addRecipeToShopping } = useApp();
   const [completed, setCompleted] = useState<string[]>([]);
   const adapted = adaptRecipe(dish, preferences);
   const match = rankRecipes([dish], pantry)[0];
+  const missingIngredients = dish.ingredients.filter((ingredient) => !hasIngredient(pantry, ingredient.name));
+  const shoppingComplete = missingIngredients.length > 0 && missingIngredients.every((ingredient) => (
+    shopping.some((item) => (
+      normalizeIngredient(item.name) === normalizeIngredient(ingredient.name)
+      && item.unit === ingredient.unit
+      && item.recipeIds.includes(dish.id)
+    ))
+  ));
 
   const addMissing = () => {
+    if (!missingIngredients.length || shoppingComplete) return;
     addRecipeToShopping(dish);
-    setAdded(true);
   };
 
   return (
@@ -626,13 +632,20 @@ function RecipeDetail({ dish }: { dish: Recipe }) {
         <section className="detail-section">
           <div className="section-heading light">
             <div><p className="eyebrow red">准备</p><h2>食材与用量</h2></div>
-            <button type="button" className="outline-button" data-added={added ? "true" : "false"} onClick={addMissing}>
-              {added ? <CheckIcon /> : <PlusIcon />}{added ? "已加入采购单" : "加入缺料"}
+            <button
+              type="button"
+              className="outline-button"
+              data-added={shoppingComplete || missingIngredients.length === 0 ? "true" : "false"}
+              disabled={shoppingComplete || missingIngredients.length === 0}
+              onClick={addMissing}
+            >
+              {shoppingComplete || missingIngredients.length === 0 ? <CheckIcon /> : <PlusIcon />}
+              {missingIngredients.length === 0 ? "无需补料" : shoppingComplete ? "已加入采购单" : "加入缺料"}
             </button>
           </div>
           <div className="ingredient-list">
             {adapted.ingredients.map((ingredient) => {
-              const has = pantry.some((item) => normalizeIngredient(item) === normalizeIngredient(ingredient.name));
+              const has = hasIngredient(pantry, ingredient.name);
               return (
                 <div key={ingredient.name} data-have={has ? "true" : "false"}>
                   <span>{has ? <CheckIcon /> : null}</span>

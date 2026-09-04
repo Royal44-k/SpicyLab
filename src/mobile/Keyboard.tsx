@@ -5,7 +5,9 @@ import {
   type PropsWithChildren,
   type Ref,
   type TextareaHTMLAttributes,
+  useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -40,10 +42,44 @@ export function KeyboardProvider({ children }: PropsWithChildren) {
   const [dragOffset, setRawDragOffset] = useState(0);
   const [isDragging, setDragging] = useState(false);
   const [focusedElement, setFocusedElement] = useState<HTMLElement | null>(null);
+  const focusedElementRef = useRef<HTMLElement | null>(null);
+  const visibleRef = useRef(false);
   const fullHeight = device.geometry.keyboard.height;
-  const setDragOffset = (offset: number) => {
+
+  const setDragOffset = useCallback((offset: number) => {
     setRawDragOffset(Math.max(0, Math.min(fullHeight, offset)));
-  };
+  }, [fullHeight]);
+
+  const show = useCallback((element?: HTMLElement | null) => {
+    const nextElement = element ?? null;
+    focusedElementRef.current = nextElement;
+    visibleRef.current = true;
+    setRawDragOffset(0);
+    setDragging(false);
+    setFocusedElement(nextElement);
+    setVisible(true);
+  }, []);
+
+  const hide = useCallback(() => {
+    const element = focusedElementRef.current;
+    focusedElementRef.current = null;
+    visibleRef.current = false;
+    element?.blur();
+    setDragging(false);
+    setFocusedElement(null);
+    setVisible(false);
+  }, []);
+
+  useEffect(() => {
+    const dismissOnOutsidePointer = (event: PointerEvent) => {
+      if (!visibleRef.current || !(event.target instanceof Element)) return;
+      if (event.target.closest('input, textarea, select, [contenteditable="true"], .keyboard-dock')) return;
+      hide();
+    };
+
+    document.addEventListener("pointerdown", dismissOnOutsidePointer, true);
+    return () => document.removeEventListener("pointerdown", dismissOnOutsidePointer, true);
+  }, [hide]);
 
   const value = useMemo<KeyboardContextValue>(
     () => ({
@@ -56,20 +92,10 @@ export function KeyboardProvider({ children }: PropsWithChildren) {
       focusedElement,
       setDragOffset,
       setDragging,
-      show: (element) => {
-        setRawDragOffset(0);
-        setDragging(false);
-        setFocusedElement(element ?? null);
-        setVisible(true);
-      },
-      hide: () => {
-        focusedElement?.blur();
-        setDragging(false);
-        setFocusedElement(null);
-        setVisible(false);
-      },
+      show,
+      hide,
     }),
-    [dragOffset, focusedElement, fullHeight, isDragging, visible],
+    [dragOffset, focusedElement, fullHeight, hide, isDragging, setDragOffset, show, visible],
   );
 
   return <KeyboardContext.Provider value={value}>{children}</KeyboardContext.Provider>;
@@ -190,6 +216,14 @@ export function KeyboardInput(props: KeyboardInputProps) {
         keyboard.show(event.currentTarget);
         inputProps.onFocus?.(event);
       }}
+      onBlur={(event) => {
+        inputProps.onBlur?.(event);
+        queueMicrotask(() => {
+          const active = document.activeElement;
+          if (active instanceof Element && active.matches('input, textarea, select, [contenteditable="true"]')) return;
+          keyboard.hide();
+        });
+      }}
     />
   );
 }
@@ -203,6 +237,14 @@ export function KeyboardTextarea(props: TextareaHTMLAttributes<HTMLTextAreaEleme
       onFocus={(event) => {
         keyboard.show(event.currentTarget);
         props.onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        props.onBlur?.(event);
+        queueMicrotask(() => {
+          const active = document.activeElement;
+          if (active instanceof Element && active.matches('input, textarea, select, [contenteditable="true"]')) return;
+          keyboard.hide();
+        });
       }}
     />
   );

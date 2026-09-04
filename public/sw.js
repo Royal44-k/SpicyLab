@@ -1,4 +1,4 @@
-const CACHE_NAME = "zaobian-shell-v2";
+const CACHE_NAME = "zaobian-shell-v3";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/assets/app/hero-wok.png", "/assets/app/laziji.png"];
 
 self.addEventListener("install", (event) => {
