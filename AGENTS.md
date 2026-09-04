@@ -14,6 +14,10 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 - While the primary bottom navigation is visible, every root screen's scroll viewport must end above it so list rows, controls, and quick-pick chips can never sit underneath the navigation.
 - On iPhone root tabs, extend the bottom navigation's visual background through the Home Indicator safe area so no empty strip appears below it.
 - Keep live device status chrome readable over dark hero imagery by switching it to a high-contrast light treatment without replacing the runtime-owned clock or indicators.
+- Start new users with an empty pantry; common ingredients are suggestions only and must never be silently treated as owned inventory.
+- Enter, the add button, and the home primary CTA commit ingredient drafts and dismiss the keyboard; tapping outside or starting a scroll dismisses the keyboard while preserving an uncommitted draft.
+- Ingredient-driven home results must exclude zero-match recipes and use the same explicit alias/compatibility rules as recipe details and shopping lists.
+- Repeated input, tab, detail, and back operations must be idempotent and must not create stale current screens or unresponsive controls.
 
 When implementing from a selected generated mock, treat that image as the source of truth for layout, component anatomy, density, spacing, color, typography, visible content, and hierarchy.
 
