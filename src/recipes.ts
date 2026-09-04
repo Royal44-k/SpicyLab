@@ -55,7 +55,7 @@ const recipe = (
   safety?: string,
 ): Recipe => ({
   id,
-  image: id === "sc-laziji" ? "/assets/app/laziji.png" : `/assets/app/dishes/${id}.png`,
+  image: id === "sc-laziji" ? "/assets/app/laziji.png" : `/assets/app/dishes/${id}.jpg`,
   name,
   cuisine,
   subtitle,
