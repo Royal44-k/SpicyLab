@@ -18,6 +18,7 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 - Enter, the add button, and the home primary CTA commit ingredient drafts and dismiss the keyboard; tapping outside or starting a scroll dismisses the keyboard while preserving an uncommitted draft.
 - Ingredient-driven home results must exclude zero-match recipes and use the same explicit alias/compatibility rules as recipe details and shopping lists.
 - Repeated input, tab, detail, and back operations must be idempotent and must not create stale current screens or unresponsive controls.
+- The simulated phone screen itself must never retain browser focus scrolling after the keyboard closes; app layers must stay aligned to all four screen edges in empty and populated states.
 
 When implementing from a selected generated mock, treat that image as the source of truth for layout, component anatomy, density, spacing, color, typography, visible content, and hierarchy.
 

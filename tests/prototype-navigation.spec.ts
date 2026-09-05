@@ -61,6 +61,42 @@ test("the primary CTA commits its draft, closes the keyboard, and ranks the new 
   await expect(page.locator(".featured-recipe .match-badge")).toHaveText("现有食材可做");
 });
 
+test("closing the keyboard never leaves the phone screen scrolled above a blank lower area", async ({ page }) => {
+  await page.setViewportSize({ width: 686, height: 663 });
+
+  for (const ingredient of ["牛肉", "毛血"]) {
+    await page.goto("/");
+    const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+
+    await input.click();
+    await input.fill(ingredient);
+    await page.getByTestId("device-screen").evaluate((screen) => {
+      // Reproduce the native browser's focus scroll in a short desktop viewport.
+      // Some browsers retain this offset after the real keyboard is dismissed.
+      screen.scrollTop = 327;
+    });
+    await page.getByRole("button", { name: "看看能做什么" }).click();
+    await expect(page.getByTestId("keyboard-dock")).toHaveAttribute("data-visible", "false");
+
+    const layout = await page.evaluate(() => {
+      const screen = document.querySelector<HTMLElement>('[data-testid="device-screen"]')!;
+      const viewport = document.querySelector<HTMLElement>('[data-testid="mobile-app-viewport"]')!;
+      const screenRect = screen.getBoundingClientRect();
+      const viewportRect = viewport.getBoundingClientRect();
+
+      return {
+        screenScrollTop: screen.scrollTop,
+        viewportTopDelta: viewportRect.top - screenRect.top,
+        viewportBottomDelta: viewportRect.bottom - screenRect.bottom,
+      };
+    });
+
+    expect(layout.screenScrollTop, `${ingredient}提交后手机屏幕容器不应残留原生滚动量`).toBe(0);
+    expect(Math.abs(layout.viewportTopDelta)).toBeLessThanOrEqual(1);
+    expect(Math.abs(layout.viewportBottomDelta)).toBeLessThanOrEqual(1);
+  }
+});
+
 test("zero-match pantry shows guidance instead of a fixed recipe", async ({ page }) => {
   const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
 

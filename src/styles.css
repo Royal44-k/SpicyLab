@@ -177,6 +177,7 @@ button {
 .device-screen {
   position: absolute;
   overflow: hidden;
+  overflow: clip;
   border-radius: 42px;
   background: #ffffff;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
