@@ -1,8 +1,8 @@
 # Design QA — 灶边首页
 
-- source visual truth path: `C:\Users\lenovo\.codex\generated_images\01a05078-92df-73c1-b9fe-97eb23922fa0\exec-f12986d0-252c-4e0b-bd8a-5fec5b495998.png`
-- implementation screenshot path: `D:\Codex-chat\zaobian-recipe-pwa\qa\implementation-home-393x852.png`
-- combined comparison path: `D:\Codex-chat\zaobian-recipe-pwa\qa\comparison-board-final.png`
+- source visual truth: the original generation artifact was session-local; its normalized reference is preserved inside `qa/comparison-board-final.png`
+- implementation screenshot path: `qa/implementation-home-393x852.png`
+- combined comparison path: `qa/comparison-board-final.png`
 - viewport: 1400 × 1200 browser viewport; iPhone app screen verified at 393 × 852 CSS px
 - source pixels: 853 × 1920
 - implementation pixels: 393 × 852 at devicePixelRatio 1

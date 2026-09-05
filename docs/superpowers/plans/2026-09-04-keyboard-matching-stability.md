@@ -1,5 +1,7 @@
 # Keyboard, Matching, and Stability Implementation Plan
 
+> Historical execution plan. The implementation is complete; current behavior and architecture are documented in `docs/DEVELOPMENT.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make ingredient entry, recipe ranking, and repeated navigation deterministic and reliable, then publish the verified fix to the existing public site.
@@ -292,4 +294,3 @@ Deploy without reinitializing or replacing the Product Design mobile project.
 - [ ] **Step 4: Re-open the public URL and verify the deployed version**
 
 Confirm the service worker is updated, the public DOM contains the new empty-state copy, and all critical interactions match the local build.
-

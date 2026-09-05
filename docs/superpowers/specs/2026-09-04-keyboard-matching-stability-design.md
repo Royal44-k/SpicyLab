@@ -30,15 +30,19 @@ Focused input groups receive a visible focus treatment. Dismissal must never era
 
 ## Ingredient Matching Model
 
-Ingredient text is normalized through one canonical alias table. Exact aliases such as “鸡腿” → “鸡腿肉”, “带皮五花肉” → “五花肉”, and “干红辣椒” → “干辣椒” are stored canonically. A small directional compatibility table supports deliberate generic inputs such as “鸡肉” without allowing unrestricted substring matching.
+Ingredient text is normalized through one canonical alias table. Exact aliases such as “鸡腿” → “鸡腿肉”, “带皮五花肉” → “五花肉”, and “干红辣椒” → “干辣椒” are stored canonically. A data-driven family index supports deliberate generic inputs such as “鸡肉”“鱼肉”“豆制品” without allowing unrestricted substring matching. Exact/equivalent matches can satisfy inventory requirements; family-related matches can recall and rank a recipe but never claim that a specific cut is already owned.
 
 Each required main ingredient has weight 3 and each required side ingredient has weight 1. Exact matches receive full weight; approved compatible matches receive reduced weight. Recipes sort by:
 
-1. all required ingredients available;
-2. weighted match ratio descending;
-3. missing required ingredient count ascending;
-4. cooking time ascending;
-5. source catalog order for deterministic ties.
+1. semantic query score when a search query exists;
+2. all required ingredients available;
+3. satisfied main-ingredient score;
+4. related main-ingredient score;
+5. weighted match ratio descending;
+6. missing main-ingredient count ascending;
+7. total missing ingredient count ascending;
+8. cooking time ascending;
+9. source catalog order for deterministic ties.
 
 Seasonings and aromatics remain visible in detail and shopping views but do not determine whether cooking can start. The exported matcher is the sole source for ranking, detail ownership markers, and shopping-list omission.
 
@@ -62,4 +66,3 @@ The service-worker cache version is incremented so the published build cannot re
 Unit tests cover canonicalization, dangerous partial inputs, weighted sorting, state reducer idempotency, and cross-feature matcher consistency. Browser tests cover Enter, plus, CTA commit, outside dismissal, refocus, draft preservation, zero-match empty state, rapid repeated actions, tab switching, detail/back restoration, footer clearance, and both iPhone and Pixel runtime geometry.
 
 Final verification includes runtime integrity, TypeScript production build, Sites worker tests, in-app browser interaction checks, and post-deployment checks on the existing public URL.
-
