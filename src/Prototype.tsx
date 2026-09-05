@@ -369,6 +369,12 @@ function QuickIngredient({ name }: { name: string }) {
 
 function FeaturedRecipe({ result, onOpen }: { result: ReturnType<typeof rankRecipes>[number]; onOpen: () => void }) {
   const match = Math.round(result.matchRatio * 100);
+  const missingNames = `${result.missing.slice(0, 2).map((item) => item.name).join("、")}${result.missing.length > 2 ? " 等" : ""}`;
+  const availabilityNote = result.missing.length === 0
+    ? result.recipe.subtitle
+    : result.related.length > 0
+      ? `同类食材相关，仍需 ${missingNames}`
+      : `还缺 ${missingNames}`;
   return (
     <button type="button" className="featured-recipe" onClick={onOpen} aria-label={`查看${result.recipe.name}菜谱`}>
       <img src={result.recipe.image} alt={`${result.recipe.name}成菜图`} draggable={false} />
@@ -377,7 +383,7 @@ function FeaturedRecipe({ result, onOpen }: { result: ReturnType<typeof rankReci
       <span className="featured-copy">
         <small>{result.recipe.cuisine} · {result.recipe.time} 分钟 · 辣度 {result.recipe.heat}/3</small>
         <strong>{result.recipe.name}</strong>
-        <span>{result.missing.length === 0 ? result.recipe.subtitle : `还缺 ${result.missing.slice(0, 2).map((item) => item.name).join("、")}${result.missing.length > 2 ? " 等" : ""}`}</span>
+        <span>{availabilityNote}</span>
       </span>
       <ChevronRightIcon className="featured-arrow" width={22} height={22} />
     </button>

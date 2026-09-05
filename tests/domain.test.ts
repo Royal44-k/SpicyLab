@@ -63,6 +63,67 @@ test("ingredient recommendations exclude zero matches and rank main-ingredient c
   assert.equal(ranked[0]?.matchRatio, 1);
 });
 
+test("generic fish input recalls fish recipes without claiming a different cut is available", () => {
+  const ranked = findRelevantRecipes(recipes, ["鱼肉"]);
+  const names = ranked.map((result) => result.recipe.name);
+  const fishHead = ranked.find((result) => result.recipe.name === "剁椒鱼头");
+
+  assert.equal(ranked[0]?.recipe.name, "剁椒鱼头");
+  assert.ok(names.includes("酸菜鱼"));
+  assert.ok(names.includes("来凤鱼"));
+  assert.ok(names.includes("赣南小炒鱼"));
+  assert.ok(!names.includes("鱼香肉丝"));
+  assert.ok(fishHead);
+  assert.equal(fishHead.canCook, false);
+  assert.deepEqual(fishHead.matched.map((ingredient) => ingredient.name), []);
+  assert.deepEqual(fishHead.related.map((ingredient) => ingredient.name), ["花鲢鱼头"]);
+  assert.deepEqual(fishHead.missing.map((ingredient) => ingredient.name), ["花鲢鱼头"]);
+  assert.equal(hasIngredient(["鱼肉"], "花鲢鱼头"), false);
+  assert.ok(buildShoppingList(fishHead.recipe, ["鱼肉"]).some((item) => item.name === "花鲢鱼头"));
+});
+
+test("ingredient families recall similar catalog cases while rejecting misleading text fragments", () => {
+  const cases = [
+    { input: "鸡肉", includes: ["辣子鸡", "宫保鸡丁", "东安鸡"], excludes: ["鱼香肉丝"] },
+    { input: "猪肉", includes: ["回锅肉", "水煮肉片", "瓦罐肉饼汤"], excludes: ["小炒黄牛肉"] },
+    { input: "牛肉", includes: ["麻婆豆腐", "小炒黄牛肉"], excludes: ["辣椒炒肉"] },
+    { input: "鸭肉", includes: ["永州血鸭", "莲花血鸭", "南昌啤酒鸭"], excludes: ["毛血旺"] },
+    { input: "豆制品", includes: ["麻婆豆腐", "重庆豆花饭"], excludes: ["干煸四季豆"] },
+    { input: "虾肉", includes: ["口味虾"], excludes: ["剁椒鱼头"] },
+    { input: "鸡杂", includes: ["黔江鸡杂"], excludes: ["辣子鸡"] },
+    { input: "辣椒", includes: ["辣椒炒肉", "永州血鸭"], excludes: ["麻婆豆腐", "剁椒鱼头"] },
+    { input: "叶菜", includes: ["重庆小面", "小炒黄牛肉"], excludes: ["麻婆豆腐"] },
+    { input: "菌菇", includes: ["鱼香肉丝"], excludes: ["酸菜鱼"] },
+    { input: "米粉", includes: ["南昌拌粉", "赣味粉蒸肉"], excludes: ["重庆小面"] },
+    { input: "腊味", includes: ["腊味合蒸", "藜蒿炒腊肉"], excludes: ["咸烧白"] },
+    { input: "蛋类", includes: ["外婆菜炒蛋", "瓦罐肉饼汤"], excludes: ["毛血旺"] },
+  ] as const;
+
+  for (const { input, includes, excludes } of cases) {
+    const names = findRelevantRecipes(recipes, [input]).map((result) => result.recipe.name);
+    for (const name of includes) assert.ok(names.includes(name), `${input} 应召回 ${name}`);
+    for (const name of excludes) assert.ok(!names.includes(name), `${input} 不应召回 ${name}`);
+  }
+});
+
+test("semantic recipe search prioritizes exact ingredients then related ingredient families", () => {
+  const fishResults = rankRecipes(recipes, [], "鱼肉");
+  const fishNames = fishResults.map((result) => result.recipe.name);
+
+  assert.equal(fishResults[0]?.recipe.name, "剁椒鱼头");
+  assert.ok(fishNames.includes("酸菜鱼"));
+  assert.ok(!fishNames.includes("鱼香肉丝"));
+  assert.ok(!rankRecipes(recipes, [], "鱼").some((result) => result.recipe.name === "鱼香肉丝"));
+  assert.ok(!rankRecipes(recipes, [], "鸡肉").some((result) => result.recipe.name === "黔江鸡杂"));
+  assert.ok(!rankRecipes(recipes, [], "鸭肉").some((result) => result.recipe.name === "毛血旺"));
+
+  const exactCutResults = rankRecipes(recipes, [], "黑鱼片");
+  assert.equal(exactCutResults[0]?.recipe.name, "酸菜鱼");
+
+  const compoundResults = rankRecipes(recipes, [], "鱼肉 蒸菜");
+  assert.deepEqual(compoundResults.map((result) => result.recipe.name), ["剁椒鱼头"]);
+});
+
 test("recipe search includes ingredient names that are absent from titles and tags", () => {
   const ranked = rankRecipes(recipes, [], "毛肚");
 

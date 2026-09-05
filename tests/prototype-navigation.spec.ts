@@ -30,6 +30,27 @@ test("new pantry items immediately promote the best matching recipe", async ({ p
   await expect(page.locator(".featured-recipe img")).toHaveAttribute("alt", "麻婆豆腐成菜图");
 });
 
+test("generic ingredient input surfaces related recipes without claiming the exact cut is owned", async ({ page }) => {
+  const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
+
+  await input.fill("鱼肉");
+  await page.getByRole("button", { name: "看看能做什么" }).click();
+
+  await expect(page.locator(".featured-recipe strong")).toHaveText("剁椒鱼头");
+  await expect(page.locator(".featured-recipe")).toContainText("同类食材相关，仍需 花鲢鱼头");
+  await expect(page.locator(".featured-recipe")).not.toContainText("现有食材可做");
+
+  await page.getByRole("navigation", { name: "主要导航" })
+    .getByRole("button", { name: "菜谱", exact: true })
+    .click();
+  const search = page.getByRole("searchbox", { name: "搜索菜谱" });
+  await search.fill("鱼肉");
+  await search.press("Enter");
+
+  await expect(page.locator(".catalog-list .recipe-row strong").first()).toHaveText("剁椒鱼头");
+  await expect(page.locator(".catalog-list .recipe-row", { hasText: "鱼香肉丝" })).toHaveCount(0);
+});
+
 test("outside tap dismisses the keyboard, preserves the ingredient draft, and permits refocus", async ({ page }) => {
   const input = page.getByRole("textbox", { name: "输入家里现有的食材" });
   const keyboard = page.getByTestId("keyboard-dock");

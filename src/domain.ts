@@ -2,6 +2,7 @@ import type { Ingredient, Recipe } from "./recipes.ts";
 import {
   canonicalIngredient,
   createPantryIndex,
+  ingredientFamilyIds,
   matchIngredient,
 } from "./ingredientMatching.ts";
 
@@ -33,6 +34,7 @@ export type LocalState = {
 export type RankedRecipe = {
   recipe: Recipe;
   matched: Ingredient[];
+  related: Ingredient[];
   missing: Ingredient[];
   matchRatio: number;
   canCook: boolean;
@@ -65,21 +67,16 @@ export function parseIngredientInput(value: string): string[] {
 
 export function rankRecipes(catalog: Recipe[], pantry: string[], query = ""): RankedRecipe[] {
   const available = createPantryIndex(pantry);
-  const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
+  const searchTerms = query
+    .split(/[、，,；;\s]+/u)
+    .map((term) => canonicalIngredient(term.toLocaleLowerCase("zh-CN")))
+    .filter(Boolean);
 
   return catalog
-    .filter((item) => {
-      if (!normalizedQuery) return true;
-      const haystack = [
-        item.name,
-        item.cuisine,
-        item.subtitle,
-        ...item.tags,
-        ...item.ingredients.map((ingredient) => ingredient.name),
-      ].join(" ").toLocaleLowerCase("zh-CN");
-      return haystack.includes(normalizedQuery);
-    })
-    .map((item, catalogIndex) => {
+    .flatMap((item, catalogIndex) => {
+      const queryScores = searchTerms.map((term) => scoreRecipeSearchTerm(item, term));
+      if (queryScores.some((score) => score === 0)) return [];
+
       // Pantry matching answers “can I start this dish?” from main ingredients and
       // vegetables. Aromatics and seasonings still appear in the detailed shopping list.
       const required = item.ingredients.filter((ingredient) =>
@@ -90,25 +87,95 @@ export function rankRecipes(catalog: Recipe[], pantry: string[], query = ""): Ra
         result: matchIngredient(available, ingredient.name),
         weight: ingredient.category === "主料" ? 3 : 1,
       }));
-      const matched = matches.filter(({ result }) => result.matched).map(({ ingredient }) => ingredient);
-      const missing = matches.filter(({ result }) => !result.matched).map(({ ingredient }) => ingredient);
+      const matched = matches.filter(({ result }) => result.satisfied).map(({ ingredient }) => ingredient);
+      const related = matches
+        .filter(({ result }) => result.relevant && !result.satisfied)
+        .map(({ ingredient }) => ingredient);
+      const missing = matches.filter(({ result }) => !result.satisfied).map(({ ingredient }) => ingredient);
       const totalWeight = matches.reduce((total, { weight }) => total + weight, 0);
       const earnedWeight = matches.reduce((total, { result, weight }) => total + result.score * weight, 0);
       const matchRatio = totalWeight === 0 ? 1 : earnedWeight / totalWeight;
-      return { recipe: item, matched, missing, matchRatio, canCook: missing.length === 0, catalogIndex };
+      const mainSatisfiedScore = matches.reduce((total, { ingredient, result }) =>
+        total + (ingredient.category === "主料" && result.satisfied ? result.score : 0), 0);
+      const mainRelatedScore = matches.reduce((total, { ingredient, result }) =>
+        total + (ingredient.category === "主料" && result.relevant && !result.satisfied ? result.score : 0), 0);
+      const missingMainCount = matches.filter(({ ingredient, result }) =>
+        ingredient.category === "主料" && !result.satisfied).length;
+
+      return [{
+        recipe: item,
+        matched,
+        related,
+        missing,
+        matchRatio,
+        canCook: missing.length === 0,
+        catalogIndex,
+        queryScore: queryScores.reduce((total, score) => total + score, 0),
+        mainSatisfiedScore,
+        mainRelatedScore,
+        missingMainCount,
+      }];
     })
     .sort((a, b) => {
+      if (searchTerms.length && a.queryScore !== b.queryScore) return b.queryScore - a.queryScore;
       if (a.canCook !== b.canCook) return Number(b.canCook) - Number(a.canCook);
+      if (a.mainSatisfiedScore !== b.mainSatisfiedScore) return b.mainSatisfiedScore - a.mainSatisfiedScore;
+      if (a.mainRelatedScore !== b.mainRelatedScore) return b.mainRelatedScore - a.mainRelatedScore;
       if (a.matchRatio !== b.matchRatio) return b.matchRatio - a.matchRatio;
+      if (a.missingMainCount !== b.missingMainCount) return a.missingMainCount - b.missingMainCount;
       if (a.missing.length !== b.missing.length) return a.missing.length - b.missing.length;
       if (a.recipe.time !== b.recipe.time) return a.recipe.time - b.recipe.time;
       return a.catalogIndex - b.catalogIndex;
     })
-    .map(({ catalogIndex: _catalogIndex, ...result }) => result);
+    .map(({
+      catalogIndex: _catalogIndex,
+      mainRelatedScore: _mainRelatedScore,
+      mainSatisfiedScore: _mainSatisfiedScore,
+      missingMainCount: _missingMainCount,
+      queryScore: _queryScore,
+      ...result
+    }) => result);
 }
 
 export function findRelevantRecipes(catalog: Recipe[], pantry: string[]): RankedRecipe[] {
-  return rankRecipes(catalog, pantry).filter((result) => result.matched.length > 0);
+  return rankRecipes(catalog, pantry).filter((result) => result.matched.length > 0 || result.related.length > 0);
+}
+
+function scoreRecipeSearchTerm(recipe: Recipe, term: string): number {
+  const queryIndex = createPantryIndex([term]);
+  const ingredientMatches = recipe.ingredients.map((ingredient) => ({
+    ingredient,
+    result: matchIngredient(queryIndex, ingredient.name),
+  }));
+  const hasIngredientMeaning = ingredientFamilyIds(term).size > 0;
+  const hasRelevantIngredient = ingredientMatches.some(({ result }) => result.relevant);
+  const canUseTextFields = !hasIngredientMeaning || hasRelevantIngredient;
+  let score = 0;
+
+  const normalizedName = recipe.name.toLocaleLowerCase("zh-CN").replaceAll(/\s+/g, "");
+  if (canUseTextFields && normalizedName === term) score = Math.max(score, 1_000);
+  else if (canUseTextFields && normalizedName.includes(term)) score = Math.max(score, 900);
+
+  for (const tag of recipe.tags) {
+    const normalizedTag = canonicalIngredient(tag.toLocaleLowerCase("zh-CN"));
+    if (normalizedTag === term) score = Math.max(score, 860);
+    else if (canUseTextFields && normalizedTag.includes(term)) score = Math.max(score, 780);
+  }
+
+  for (const { ingredient, result } of ingredientMatches) {
+    if (!result.relevant) continue;
+    const categoryScore = ingredient.category === "主料" ? 90 : ingredient.category === "配菜" ? 45 : 0;
+    const relationScore = result.kind === "exact" ? 850 : result.satisfied ? 760 : 630;
+    score = Math.max(score, relationScore + categoryScore);
+  }
+
+  const normalizedCuisine = recipe.cuisine.toLocaleLowerCase("zh-CN").replaceAll(/\s+/g, "");
+  if (normalizedCuisine.includes(term)) score = Math.max(score, 700);
+
+  const normalizedSubtitle = recipe.subtitle.toLocaleLowerCase("zh-CN").replaceAll(/\s+/g, "");
+  if (canUseTextFields && normalizedSubtitle.includes(term)) score = Math.max(score, 520);
+
+  return score;
 }
 
 export function buildShoppingList(
@@ -121,7 +188,7 @@ export function buildShoppingList(
   let changed = false;
 
   for (const ingredient of recipe.ingredients) {
-    if (matchIngredient(available, ingredient.name).matched) continue;
+    if (matchIngredient(available, ingredient.name).satisfied) continue;
     const current = result.find(
       (item) => normalizeIngredient(item.name) === normalizeIngredient(ingredient.name) && item.unit === ingredient.unit,
     );
