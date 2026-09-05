@@ -18,6 +18,7 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 - Enter, the add button, and the home primary CTA commit ingredient drafts and dismiss the keyboard; tapping outside or starting a scroll dismisses the keyboard while preserving an uncommitted draft.
 - Ingredient-driven home results must exclude zero-match recipes and use the same explicit alias/compatibility rules as recipe details and shopping lists.
 - Ingredient matching must distinguish exact/equivalent availability from broader family relevance: generic terms may recall recipes that use a specific cut, but must not mark that cut as owned or remove it from the shopping list; semantic search must also reject misleading dish-name fragments such as the “鱼” in “鱼香肉丝”.
+- Recipe search must expose only the app-owned red clear button; suppress browser-native search cancel and decoration controls so the input never shows duplicate clear affordances.
 - Repeated input, tab, detail, and back operations must be idempotent and must not create stale current screens or unresponsive controls.
 - The simulated phone screen itself must never retain browser focus scrolling after the keyboard closes; app layers must stay aligned to all four screen edges in empty and populated states.
 

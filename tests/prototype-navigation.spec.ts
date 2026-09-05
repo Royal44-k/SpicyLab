@@ -155,6 +155,24 @@ test("recipe search matches ingredient names and Enter closes the keyboard", asy
   await expect(page.getByTestId("keyboard-dock")).toHaveAttribute("data-visible", "false");
 });
 
+test("recipe search hides the browser-native clear control and keeps the app clear button", async ({ page }) => {
+  await page.getByRole("navigation", { name: "主要导航" })
+    .getByRole("button", { name: "菜谱", exact: true })
+    .click();
+
+  const input = page.getByRole("searchbox", { name: "搜索菜谱" });
+  await input.fill("辣椒");
+
+  const nativeClearAppearance = await input.evaluate((element) =>
+    getComputedStyle(element, "::-webkit-search-cancel-button").webkitAppearance);
+  expect(nativeClearAppearance).toBe("none");
+
+  const appClearButton = page.getByRole("button", { name: "清除搜索" });
+  await expect(appClearButton).toBeVisible();
+  await appClearButton.click();
+  await expect(input).toHaveValue("");
+});
+
 test("taste pantry input accepts Enter, hides the keyboard, and updates the shared pantry", async ({ page }) => {
   await page.getByRole("navigation", { name: "主要导航" })
     .getByRole("button", { name: "口味", exact: true })
