@@ -1,0 +1,10 @@
+{
+  "status": "SpicyLab source palette with proposed sizing targets; validate in context",
+  "color": {"ink":"#171412","charcoal":"#141310","iron":"#22201C","rice":"#F6F1E6","paper":"#FBF8F0","muted":"#756E63","line":"#DED6C8","chili":"#C83224","chiliDark":"#8D2018","brass":"#B99A5C","sage":"#58704D"},
+  "typography": {"bodyFont":"system-ui, PingFang SC, Microsoft YaHei, sans-serif","brandFont":"STKaiti, KaiTi, serif","bodyPx":16,"cookingBodyPx":22,"lineHeight":1.6},
+  "spacingPx": [4,8,12,16,20,24,32],
+  "radiusPx": {"control":12,"card":18},
+  "interaction": {"targetMinPx":44,"preferredKitchenTargetPx":48,"respectReducedMotion":true},
+  "image": {"dishAspectRatio":"16:9","sourceAndRuntimeSeparate":true},
+  "safeArea": {"native":"env(safe-area-inset-bottom)","prototype":"use runtime contract; do not double count"}
+}

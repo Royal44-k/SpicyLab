@@ -1,0 +1,29 @@
+{
+  "id": "example-mapo-tofu",
+  "version": "draft-1",
+  "name": "麻婆豆腐家常版（结构样例，未经试做）",
+  "cuisine": "川菜家常变体",
+  "baseServings": 2,
+  "totalMinutesEstimate": 30,
+  "equipment": ["炒锅", "量秤", "食品温度计"],
+  "ingredients": [
+    {"id":"tofu","name":"适合炖煮的豆腐","amount":400,"unit":"g","role":"main","required":true,"state":"冷藏","preparation":"切块"},
+    {"id":"beef","name":"牛肉末","amount":80,"unit":"g","role":"main","required":true,"state":"生","preparation":"保持冷藏至加工"},
+    {"id":"sauce","name":"豆瓣酱","amount":20,"unit":"g","role":"seasoning","required":true,"state":"加工调味品","preparation":"查看实际品牌配料"},
+    {"id":"garlic","name":"蒜","amount":10,"unit":"g","role":"aromatic","required":true,"state":"鲜","preparation":"切末"},
+    {"id":"oil","name":"食用油","amount":15,"unit":"ml","role":"seasoning","required":true,"state":"液体","preparation":"计量"},
+    {"id":"water","name":"安全饮用水","amount":200,"unit":"ml","role":"other","required":true,"state":"液体","preparation":"留部分调水淀粉"},
+    {"id":"starch","name":"淀粉","amount":6,"unit":"g","role":"seasoning","required":true,"state":"干粉","preparation":"与预留水混匀"},
+    {"id":"pepper","name":"花椒粉","amount":1,"unit":"g","role":"aromatic","required":false,"state":"粉末","preparation":"按接受程度调整"}
+  ],
+  "steps": [
+    {"id":"prep","instruction":"核对原料状态和配料表，生肉与即食材料分开处理；豆腐切块，蒜切末，留水调散淀粉。","ingredientIds":["tofu","beef","sauce","garlic","water","starch"],"heat":"不开火","completionCue":"器具分开且材料计量完成"},
+    {"id":"cook","instruction":"锅中加油，炒散牛肉末，再炒香蒜和豆瓣酱；加入水与豆腐轻推炖煮，确认肉末充分熟制。","ingredientIds":["oil","beef","garlic","sauce","water","tofu"],"heat":"先中火炒散后调整至轻沸","completionCue":"肉末分散，豆腐受热且整体充分熟制；按安全参考测量，不仅靠颜色"},
+    {"id":"finish","instruction":"搅匀水淀粉分次加入，轻推至汁能挂住豆腐；按选择加入花椒粉，确认无干粉结团后关火。","ingredientIds":["starch","water","pepper"],"heat":"轻沸","completionCue":"淀粉充分糊化，酱汁均匀而不过稠"}
+  ],
+  "allergens": ["大豆", "复合酱料可能含小麦等成分，须查实际包装"],
+  "safetyNotes": ["这是数据结构示例，未经过厨师审校与试做，不可直接标为已验证配方。", "参考美国消费者熟度表，绞肉内部达到约71℃；当地适用标准和工艺应另行核对。", "生熟分开，易腐食品及时冷藏，不能以气味判定安全。"],
+  "sources": [{"id":"safe-temp","url":"https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures","supports":"绞肉熟度参考；不证明本配方已试做"}],
+  "image": {"status":"planned","path":null,"origin":"尚未生成或拍摄","aiGenerated":null},
+  "review": {"status":"draft","reviewer":null,"reviewedAt":null,"cookTested":false}
+}

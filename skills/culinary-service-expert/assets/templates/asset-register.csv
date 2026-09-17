@@ -1,0 +1,2 @@
+asset_id,recipe_or_campaign_id,asset_type,source_file,runtime_file,width,height,bytes,sha256,origin,rights_status,ai_generated,reviewer,visual_check,release_version
+example-dish,example-recipe,food-image,,,,,,,生成或实拍来源待登记,待确认,true,待指定,未核验,未发布

@@ -1,0 +1,3 @@
+# Preserve the skill package's exact bytes for SHA256 manifest verification.
+# Scope is limited to this archive; application checkout behavior is unchanged.
+* -text

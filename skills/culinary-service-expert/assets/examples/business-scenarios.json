@@ -1,0 +1,10 @@
+{
+  "currency": "CNY",
+  "period": "month",
+  "evidenceType": "illustrative-assumptions-not-forecast",
+  "scenarios": [
+    {"name":"保守","monthlyActive":5000,"paidShare":0.015,"price":15,"refundRate":0.05,"feeRate":0.03,"variableCostPerActive":0.3,"fixedMonthlyCost":20000,"acquisitionSpend":4000,"newPaidCustomers":20},
+    {"name":"基础","monthlyActive":10000,"paidShare":0.03,"price":19,"refundRate":0.03,"feeRate":0.03,"variableCostPerActive":0.2,"fixedMonthlyCost":20000,"acquisitionSpend":6000,"newPaidCustomers":60},
+    {"name":"乐观","monthlyActive":30000,"paidShare":0.06,"price":25,"refundRate":0.02,"feeRate":0.03,"variableCostPerActive":0.15,"fixedMonthlyCost":24000,"acquisitionSpend":10000,"newPaidCustomers":300}
+  ]
+}

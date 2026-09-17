@@ -1,0 +1,4 @@
+interface:
+  display_name: "餐饮菜谱服务专家"
+  short_description: "从市场与商业策划到地域菜系设计、匹配机制和交付验收的完整方法"
+  default_prompt: "使用 $culinary-service-expert，结合 SpicyLab 经验，为我的菜谱服务制定可执行的产品、内容、商业与设计方案，并区分事实、假设和待验证项。"

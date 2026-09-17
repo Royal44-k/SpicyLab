@@ -59,6 +59,7 @@ tests/                       单元、集成、移动交互与 Sites 测试
 audit/                       交互缺陷复现和最终 QA 截图
 qa/                          设计对照与实现截图
 docs/                        架构、演示、资产与历史设计规格
+skills/                      餐饮菜谱专家技能、模板、示例、工具及验收记录
 worker/                      Cloudflare Workers 兼容入口
 ```
 
@@ -70,6 +71,18 @@ worker/                      Cloudflare Workers 兼容入口
 - [移动组件契约](src/mobile/COMPONENTS.md)
 - [设计 QA 报告](design-qa.md)
 - [键盘、匹配与稳定性设计](docs/superpowers/specs/2026-09-04-keyboard-matching-stability-design.md)
+
+## 餐饮菜谱服务专家 Skill
+
+项目经验已整理为可复用的 **`culinary-service-expert`**：包括市场研究、商业计划、用户画像与故事、产品流程、厨艺与安全、食材匹配、UI/UX、地域审美、品牌传播和交付规范。事实、设计建议与商业假设分别标注；不等同于已经完成真实用户研究或厨师逐菜试做。
+
+- [技能目录与安装说明](skills/README.md)
+- [技能入口](skills/culinary-service-expert/SKILL.md)
+- [下载完整技能包](skills/culinary-service-expert.zip)
+- [交付与验收报告](skills/交付与验收.md)
+- [独立情景评测](skills/evaluation/forward-output.md)
+
+技能包含15篇参考指南、6份模板、结构化样例、3张历史截图及可运行的经营测算和菜谱结构校验工具。本次归档不改变应用代码或线上部署。
 
 ## 数据与隐私
 

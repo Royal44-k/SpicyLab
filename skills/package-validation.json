@@ -1,0 +1,169 @@
+{
+  "verifiedAt": "2026-09-17",
+  "valid": true,
+  "files": 31,
+  "references": 15,
+  "localLinks": 27,
+  "jsonFiles": 3,
+  "csvFiles": 3,
+  "totalBytes": 575251,
+  "shortDescriptionCharacters": 30,
+  "errors": [],
+  "manifest": [
+    {
+      "path": "agents/openai.yaml",
+      "bytes": 371,
+      "sha256": "50b11996ac3d6a1985e586c88d89ede2b940a6c18bccdca3c85b838c532d0c76"
+    },
+    {
+      "path": "assets/examples/business-scenarios.json",
+      "bytes": 743,
+      "sha256": "cc492b6be32ee9add77e96509176f2168d4cf2ee1d2fab6e79d9a1ba53835aaa"
+    },
+    {
+      "path": "assets/examples/recipe-record.json",
+      "bytes": 3180,
+      "sha256": "4453c8b6d7934603cfbf5b603d8b2e615560ed3ebd6b580544dec925177c7687"
+    },
+    {
+      "path": "assets/examples/spicylab-home-historical.png",
+      "bytes": 396379,
+      "sha256": "b0afc50231c9c0db49b2261fd39e023f0f120e2642bf70c17365dadef54477f2"
+    },
+    {
+      "path": "assets/examples/spicylab-keyboard-after.png",
+      "bytes": 36324,
+      "sha256": "1240bc9b528e6a5e6fcd73c3ad377d476418dcf17511ed0ab618a254b0746ca4"
+    },
+    {
+      "path": "assets/examples/spicylab-keyboard-before.png",
+      "bytes": 38133,
+      "sha256": "2c01abc68faa8e00ad9c14dbd62c63367f9de804930e81fcc31d60d251b68ad4"
+    },
+    {
+      "path": "assets/templates/acceptance-cases.csv",
+      "bytes": 1413,
+      "sha256": "0c98407ff5c50600133c4b4330b6ce233d81a535a9de56054c2ef751b16d6f10"
+    },
+    {
+      "path": "assets/templates/asset-register.csv",
+      "bytes": 286,
+      "sha256": "d26485fb3227627584811bd336663fa9d49af1c59783e99e10e43c50e6e07da9"
+    },
+    {
+      "path": "assets/templates/campaign-brief.md",
+      "bytes": 1707,
+      "sha256": "98e6e5e50520c0aea25cf2aa4bee9ddebd3a280e66e84280421a3a048c82ef3f"
+    },
+    {
+      "path": "assets/templates/design-tokens.json",
+      "bytes": 828,
+      "sha256": "0bbc235d46597fbd0471e3c7a78fb1642e27ef7c91875ea13a94f9115beeb291"
+    },
+    {
+      "path": "assets/templates/evidence-register.csv",
+      "bytes": 540,
+      "sha256": "a3e3de414a23885c522dd357cd09219ceebb43bc9d70875eff7c42e46b8c3d65"
+    },
+    {
+      "path": "assets/templates/project-workbook.md",
+      "bytes": 3388,
+      "sha256": "e75e165da290c03dc9af08a508b0902992e97cb852091e8047c5bacea588f457"
+    },
+    {
+      "path": "references/01-spicylab-case.md",
+      "bytes": 8358,
+      "sha256": "105bd0898225eb80c4c58ed638253fffb8cce58d059983b0400838cb84cb763d"
+    },
+    {
+      "path": "references/02-market-research.md",
+      "bytes": 4916,
+      "sha256": "160b46bc831b95433f788fa1e86b6074d9a3ec6594fc57a9681149b15e14f5ae"
+    },
+    {
+      "path": "references/03-business-plan.md",
+      "bytes": 5220,
+      "sha256": "94454e69e4f9afda193552fc934da5bf78e7d77b8fbf77b4554cbf00d2be19fe"
+    },
+    {
+      "path": "references/04-service-users.md",
+      "bytes": 5479,
+      "sha256": "7d78512664655364a81a2d4388b9dcf7200936e693aa7c025b61fe8f8b3eacad"
+    },
+    {
+      "path": "references/05-product-flows.md",
+      "bytes": 4588,
+      "sha256": "4b642359df3a077b139431feb4c29b2265f28fded51a6eb0b6287e110d56d807"
+    },
+    {
+      "path": "references/06-culinary-content.md",
+      "bytes": 5632,
+      "sha256": "99a9ad2cae12bacf6e038e938b072597d6d66923c9aa470d2057cc06c84b0586"
+    },
+    {
+      "path": "references/07-safety-standards.md",
+      "bytes": 5451,
+      "sha256": "827b3ade63d824796948b78e9bd282c47d6b5da328b750aa1be22c75867b21d8"
+    },
+    {
+      "path": "references/08-matching-shopping.md",
+      "bytes": 6286,
+      "sha256": "ff140f1096df1055cbc9c7b25a680ce6c6e7d137fa9724592a9f54186aa8c06a"
+    },
+    {
+      "path": "references/09-ui-regional-aesthetics.md",
+      "bytes": 4897,
+      "sha256": "5fe72c0cc134e0540251d9a9f8f8244fe2d0dd862ce977facd9f11aa22434d9d"
+    },
+    {
+      "path": "references/10-ux-interactions.md",
+      "bytes": 4579,
+      "sha256": "c4c94cdd198af65562f1fa7ee5f690d9d0b7fd22d909cc527149fbe72ecc9e39"
+    },
+    {
+      "path": "references/11-brand-campaign.md",
+      "bytes": 4226,
+      "sha256": "ec1ec21b311c58a695378682fb7627bc9eed88e9e070669322a275a57125a879"
+    },
+    {
+      "path": "references/12-engineering-delivery.md",
+      "bytes": 5251,
+      "sha256": "31f13eaa574eb266f3aa5bba763a18e53c3a17c81c288ac9c8d5375ff6011635"
+    },
+    {
+      "path": "references/13-sources.md",
+      "bytes": 3849,
+      "sha256": "1950c27ffe6cb4d00f5db36a614489d578d2a14a5599e9e90f6912273ff2a02d"
+    },
+    {
+      "path": "references/14-evaluation.md",
+      "bytes": 2276,
+      "sha256": "4433d1354c469bc2e08ee20a780b59f1a0ddd1e95889049822458f29f7177917"
+    },
+    {
+      "path": "references/15-food-service-operations.md",
+      "bytes": 3608,
+      "sha256": "f815a76402311da87f096c558e10faf444f48df7a1ff97bac59d836ae597298b"
+    },
+    {
+      "path": "scripts/audit-recipe.mjs",
+      "bytes": 4242,
+      "sha256": "b30466e9bded62a284038869d161e0b75cf4acbf319a81e800efdd4d6f3c1929"
+    },
+    {
+      "path": "scripts/business-model.mjs",
+      "bytes": 2947,
+      "sha256": "4d76c127fa0428702312bffb68bcb8f230d334f2e981d518bb7a94ca817524e9"
+    },
+    {
+      "path": "scripts/test-tools.mjs",
+      "bytes": 2985,
+      "sha256": "b76ef0a974f67ac6c0b1c24970cb3aed2508d16c23454e60f997a374c6e54024"
+    },
+    {
+      "path": "SKILL.md",
+      "bytes": 7169,
+      "sha256": "06c318cac04c18c8cd52546404683a2e2e06d55012052251b8547c7d3d191594"
+    }
+  ]
+}
